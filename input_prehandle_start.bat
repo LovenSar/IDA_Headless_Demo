@@ -122,19 +122,19 @@ echo =====================================================================
 echo   IDA_CMD = "%IDA_CMD%"
 echo   Working dir = "%CD%"
 echo   Input file = "%INPUT_FILENAME%"
-call "%IDA_CMD%" -A -c -L"%WORK_OUTPUT_DIR%\ida_1_binaryinfo.log" -S"ExtractBinaryInfo_IDA.py" "%INPUT_FILENAME%"
+call "%IDA_CMD%" -A -c -S"ExtractBinaryInfo_IDA.py" "%INPUT_FILENAME%"
 echo.
 
 echo =====================================================================
 echo [2/3] Running IDA - ExtractDisassembly_IDA.py ...
 echo =====================================================================
-call "%IDA_CMD%" -A -c -L"%WORK_OUTPUT_DIR%\ida_2_disassembly.log" -S"ExtractDisassembly_IDA.py" "%INPUT_FILENAME%"
+call "%IDA_CMD%" -A -c -S"ExtractDisassembly_IDA.py" "%INPUT_FILENAME%"
 echo.
 
 echo =====================================================================
 echo [3/3] Running IDA - ExtractPseudocode_IDA.py ...
 echo =====================================================================
-call "%IDA_CMD%" -A -c -L"%WORK_OUTPUT_DIR%\ida_3_pseudocode.log" -S"ExtractPseudocode_IDA.py" "%INPUT_FILENAME%"
+call "%IDA_CMD%" -A -c -S"ExtractPseudocode_IDA.py" "%INPUT_FILENAME%"
 echo.
 
 popd
