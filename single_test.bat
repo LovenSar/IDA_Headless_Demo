@@ -1,0 +1,1 @@
+idat -A -S"E:\WorkSpace\ReBind\tools\IDA_Pro_Terminal_Demo\Demo\IDA_Headless_Demo\src\ExtractPseudocode_IDA.py" -z -c -L"log.log" E:\WorkSpace\ReBind\tools\IDA_Pro_Terminal_Demo\Demo\IDA_Headless_Demo\tmp\Malware_sample.exe
