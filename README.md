@@ -17,6 +17,7 @@
 IDA_Headless_Demo/
 ├── README.md                     # 项目说明文档
 ├── input_prehandle_start.bat     # Windows 批处理脚本 - 主入口（拖拽文件）
+├── single_test.bat               # Windows 批处理脚本 - 单文件测试入口
 ├── ExtractBinaryInfo_IDA.py      # IDAPython 脚本 - 提取符号/字符串/段/交叉引用
 ├── ExtractDisassembly_IDA.py     # IDAPython 脚本 - 提取按函数拆分的反汇编
 └── ExtractPseudocode_IDA.py      # IDAPython 脚本 - 提取按函数拆分的伪代码（Hex-Rays）
@@ -133,11 +134,4 @@ input_prehandle_start.bat "C:\path\to\binary.exe"
 3. **CSV / ASM / C 文件中有乱码**
    - 默认使用 UTF‑8 编码输出；如果样本使用特殊编码，可按需修改脚本中的 `encoding`。
 
----
-
-如需进一步对接你现有的分析管线（例如导入数据库、做统计或可视化），可以在当前 IDA 版本的基础上继续扩展：
-
-- 在 CSV 中增加更多列（例如导入表、导出表、函数复杂度等）；
-- 在伪代码中植入自定义注释或标记；
-- 将脚本改造成接受命令行参数（如输出目录、过滤规则），以便和外部调度系统集成。
 
