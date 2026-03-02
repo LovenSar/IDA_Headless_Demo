@@ -92,7 +92,7 @@ def compute_output_dir():
 
     root_dir = os.path.dirname(input_path) if input_path else os.getcwd()
     root_dir = root_dir or "."
-    out_dir = os.path.join(root_dir, safe_base + "_pesudocode" )
+    out_dir = os.path.join(root_dir, safe_base + "_pseudocode" )
 
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
