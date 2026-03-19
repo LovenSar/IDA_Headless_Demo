@@ -1,0 +1,3 @@
+.DS_Store
+bench_results/
+**/.ida_extract_state.json

@@ -31,27 +31,16 @@ FILE_DIR=$(dirname "$INPUT_FILE")
 FILE_NAME=$(basename "$INPUT_FILE")
 BASE_NAME="${FILE_NAME%.*}"
 
-# 创建输出目录
+# 工作根目录（与样本基名一致；内部 *_output / *_disassembly / *_pseudocode 由 ExtractAll_IDA.py
+# 用 sanitize_filename 生成，勿在此用原始 BASE_NAME 预建子目录，否则特殊字符会导致空目录残留）
 OUTPUT_DIR="${FILE_DIR}/${BASE_NAME}_idademo"
 mkdir -p "$OUTPUT_DIR"
-
-# 创建子目录
-DISASSEMBLY_DIR="${OUTPUT_DIR}/${BASE_NAME}_disassembly"
-OUTPUT_CSV_DIR="${OUTPUT_DIR}/${BASE_NAME}_output"
-PSEUDOCODE_DIR="${OUTPUT_DIR}/${BASE_NAME}_pseudocode"
-
-mkdir -p "$DISASSEMBLY_DIR"
-mkdir -p "$OUTPUT_CSV_DIR"
-mkdir -p "$PSEUDOCODE_DIR"
-mkdir -p "${OUTPUT_CSV_DIR}/xrefs"
 
 echo "开始分析: $FILE_NAME"
 echo "输出目录: $OUTPUT_DIR"
 
-# 复制脚本到输出目录
-cp "$(dirname "$0")/ExtractBinaryInfo_IDA.py" "$OUTPUT_DIR/"
-cp "$(dirname "$0")/ExtractDisassembly_IDA.py" "$OUTPUT_DIR/"
-cp "$(dirname "$0")/ExtractPseudocode_IDA.py" "$OUTPUT_DIR/"
+# 复制合并后的 IDAPython 脚本
+cp "$(dirname "$0")/ExtractAll_IDA.py" "$OUTPUT_DIR/"
 
 # 复制二进制文件到输出目录（使用复制，避免移动）
 cp "$INPUT_FILE" "$OUTPUT_DIR/"
@@ -59,25 +48,14 @@ cp "$INPUT_FILE" "$OUTPUT_DIR/"
 # 进入输出目录
 cd "$OUTPUT_DIR"
 
-# 运行IDA分析
-echo "步骤1: 提取二进制信息..."
-"$IDA_CMD" -A -S"ExtractBinaryInfo_IDA.py $OUTPUT_CSV_DIR" "$OUTPUT_DIR/$FILE_NAME"
-
-echo "步骤2: 提取反汇编代码..."
-"$IDA_CMD" -A -S"ExtractDisassembly_IDA.py $DISASSEMBLY_DIR" "$OUTPUT_DIR/$FILE_NAME"
-
-echo "步骤3: 提取伪代码..."
-"$IDA_CMD" -A -S"ExtractPseudocode_IDA.py $PSEUDOCODE_DIR" "$OUTPUT_DIR/$FILE_NAME"
+# 运行 IDA（单次会话：二进制信息 + 反汇编 + 伪代码）
+echo "运行 ExtractAll_IDA.py（单进程）..."
+"$IDA_CMD" -A -c -S"ExtractAll_IDA.py" "$OUTPUT_DIR/$FILE_NAME"
 
 # 清理临时文件
 rm -f "$OUTPUT_DIR/$FILE_NAME"
-rm -f "$OUTPUT_DIR/ExtractBinaryInfo_IDA.py"
-rm -f "$OUTPUT_DIR/ExtractDisassembly_IDA.py"
-rm -f "$OUTPUT_DIR/ExtractPseudocode_IDA.py"
+rm -f "$OUTPUT_DIR/ExtractAll_IDA.py"
 
 echo "分析完成!"
 echo "结果保存在: $OUTPUT_DIR"
-echo "包含以下子目录:"
-echo "  - ${BASE_NAME}_disassembly/: 反汇编代码"
-echo "  - ${BASE_NAME}_output/: 二进制信息CSV"
-echo "  - ${BASE_NAME}_pseudocode/: 伪代码"
+echo "子目录由 ExtractAll_IDA.py 按清理后的基名生成，请在该目录下查看 *_disassembly、*_output、*_pseudocode"

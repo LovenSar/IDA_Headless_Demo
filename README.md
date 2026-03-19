@@ -15,19 +15,24 @@
 
 ```text
 IDA_Headless_Demo/
-├── README.md                     # 项目说明文档
-├── input_prehandle_start.bat     # Windows 批处理脚本 - 主入口（拖拽文件）
-├── single_test.bat               # Windows 批处理脚本 - 单文件测试入口
-├── ExtractBinaryInfo_IDA.py      # IDAPython 脚本 - 提取符号/字符串/段/交叉引用
-├── ExtractDisassembly_IDA.py     # IDAPython 脚本 - 提取按函数拆分的反汇编
-└── ExtractPseudocode_IDA.py      # IDAPython 脚本 - 提取按函数拆分的伪代码（Hex-Rays）
+├── README.md
+├── input_prehandle_start.bat     # Windows 主入口（拖拽文件）
+├── input_prehandle_start.sh      # macOS/Linux 同上
+├── single_test.bat               # Windows 直连 idat + 脚本（不调工作目录逻辑）
+└── ExtractAll_IDA.py             # 唯一 IDAPython：单次 idat 完成全部导出
 ```
 
 ## 逻辑特点（对照 Ghidra 版本）
 
-- 同样采用「批处理入口 + 多个脚本」的结构：
-  - 批处理负责：拖拽入口、路径解析、创建工作目录、复制脚本、调用 idat.exe。
-  - IDAPython 负责：在单次 IDA 分析中导出具体数据。
+- 采用「批处理 / Shell 入口 + IDAPython」结构：
+  - 入口脚本负责：拖拽或传参、创建工作目录、复制 `ExtractAll_IDA.py`、调用 **一次** `idat.exe`。
+  - `ExtractAll_IDA.py` 在同一次 IDA 会话内依次导出：二进制信息 → 反汇编 → 伪代码。
+  - **断点续跑**：进度写在 `[文件名]_idademo/.ida_extract_state.json`；中断后应打开已有 **`.i64`/`.idb`** 再跑脚本，且**不要**加 `-c`（否则会新建空库）。示例：  
+    `idat -A -S"ExtractAll_IDA.py" "D:\work\sample_idademo\sample.i64"`  
+    **强制全量重跑**：脚本参数加 `--force`，或环境变量 `IDA_EXTRACT_FORCE=1`（会删除进度文件）。  
+    若同名二进制被替换（体积/修改时间变化），会自动忽略旧进度并从头导出。  
+  - **安全退出**：每个阶段完成后与进程结束前会 `save_database`，尽量保证 IDB 与缓存文件正常落盘；退出时优先 `qexit`，回退为 `Exit`。  
+  - 流程优化：仅启动 IDA 一次、`auto_wait` 一次；段表与节表一次遍历写出两份 CSV。
 - 输出风格尽量与 Ghidra 版保持一致：
   - 为每个输入文件创建独立的工作目录：`[文件名]_idademo`。
   - 在该目录中按功能拆分子目录：
@@ -41,10 +46,10 @@ IDA_Headless_Demo/
 1. **IDA Pro 9.2**（或兼容版本）  
    默认路径示例：
    `E:\WorkSpace\ReBind\tools\IDA_Pro_Terminal_Demo\IDA Professional 9.2\idat.exe`
-2. **Windows 操作系统**
+2. **Windows 或 macOS**（Windows 用 `.bat`，macOS 用 `input_prehandle_start.sh` 并配置其中的 `IDA_CMD`）
 3. （可选）**Hex-Rays Decompiler 插件**：用于生成伪代码
 
-> 如果 Hex-Rays 不可用，`ExtractPseudocode_IDA.py` 会自动检测并跳过，不会中断其它导出流程。
+> 如果 Hex-Rays 不可用，`ExtractAll_IDA.py` 会跳过伪代码阶段，其它 CSV / 反汇编照常生成。
 
 ## 配置步骤
 
@@ -56,11 +61,10 @@ IDA_Headless_Demo/
 
    将路径改为你本地安装的 `idat.exe`。
 
-2. 如需自定义输出结构或过滤条件，可在对应 Python 脚本顶部修改配置：
+2. 如需自定义输出结构或过滤条件，在 `ExtractAll_IDA.py` 顶部修改配置：
 
-   - `ExtractBinaryInfo_IDA.py`：  
-     - `LIMIT_REFS_TO_FUNCTIONS_ONLY`  
-     - `MIN_REFS_TO_CREATE_FILE`
+   - `LIMIT_REFS_TO_FUNCTIONS_ONLY`  
+   - `MIN_REFS_TO_CREATE_FILE`
 
 ## 使用方法
 
@@ -70,13 +74,9 @@ IDA_Headless_Demo/
    `IDA_Headless_Demo\input_prehandle_start.bat` 上。
 2. 批处理会自动：
    - 在原文件目录创建 `[文件名]_idademo` 工作目录。
-   - 复制当前目录下的 `*.py` 到工作目录。
-   - 复制输入文件到工作目录。
-   - 在工作目录中依次调用：
-     - `idat.exe -A -S"ExtractBinaryInfo_IDA.py" 复制后的文件`
-     - `idat.exe -A -S"ExtractDisassembly_IDA.py" 复制后的文件`
-     - `idat.exe -A -S"ExtractPseudocode_IDA.py" 复制后的文件`
-3. 处理完成后，批处理会清理临时复制的 Python 脚本和输入文件，仅保留：
+   - 复制 `ExtractAll_IDA.py` 与输入文件到工作目录。
+   - 在工作目录调用一次：`idat.exe -A -c -S"ExtractAll_IDA.py" 复制后的文件`
+3. 处理完成后，批处理会清理临时脚本与复制的样本文件，仅保留：
    - IDA 数据库文件（如 `.i64`），便于后续用 GUI 打开。
    - 导出的反汇编 / 伪代码 / CSV 结果。
 
@@ -88,12 +88,20 @@ IDA_Headless_Demo/
 input_prehandle_start.bat "C:\path\to\binary.exe"
 ```
 
+macOS / Linux：
+
+```bash
+chmod +x input_prehandle_start.sh
+./input_prehandle_start.sh "/path/to/binary"
+```
+
 ## 输出结构
 
 完成分析后，在输入文件所在目录会出现一个工作目录：
 
 ```text
 [文件名]_idademo/
+├── .ida_extract_state.json    # 导出阶段进度（断点续跑，可选删除或 --force）
 ├── [文件名]_disassembly/      # 每个函数一个 .asm 文件
 ├── [文件名]_output/           # 各类 CSV 输出
 │   ├── [base]_symbols.csv     # 名称/地址/类型 等符号信息
@@ -110,10 +118,7 @@ input_prehandle_start.bat "C:\path\to\binary.exe"
 
 - **入口方式一致**：  
   两者都是「拖拽到批处理」作为入口，自动创建独立工作目录，避免多个样本混在一起。
-- **分析维度对应**：
-  - Ghidra 的 `ExtractBinaryInfo.py` ↔ `ExtractBinaryInfo_IDA.py`
-  - Ghidra 的 `ExtractDisassembly.py` ↔ `ExtractDisassembly_IDA.py`
-  - Ghidra 的 `ExtractPseudocode.py` ↔ `ExtractPseudocode_IDA.py`
+- **分析维度对应**：Ghidra 的 `ExtractBinaryInfo.py` / `ExtractDisassembly.py` / `ExtractPseudocode.py` 三者的导出内容，在本项目中由 **`ExtractAll_IDA.py` 一次完成**。
 - **输出思路一致**：
   - 都是按「一个样本一套目录结构」组织。
   - 都是「函数粒度拆分」反汇编和伪代码。
